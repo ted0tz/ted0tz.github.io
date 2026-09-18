@@ -6,10 +6,10 @@
 <title>Countdown</title>
 <style>
   :root {
-    --bg1: #0f0c29;
-    --bg2: #302b63;
-    --bg3: #24243e;
-    --accent: #ff6b6b;
+    --bg1: #0b1f0f;
+    --bg2: #143d1c;
+    --bg3: #061006;
+    --accent: #4ade80;
     --text: #ffffff;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -19,7 +19,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, var(--bg1), var(--bg2), var(--bg3));
+    background: linear-gradient(160deg, var(--bg3) 0%, var(--bg2) 45%, var(--bg1) 70%, var(--bg3) 100%);
     background-size: 300% 300%;
     animation: gradientShift 15s ease infinite;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -31,6 +31,12 @@
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
+  }
+  .logo {
+    width: min(500px, 80vw);
+    height: auto;
+    margin-bottom: 30px;
+    filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.5));
   }
   h1 {
     font-size: clamp(1.5rem, 5vw, 2.5rem);
@@ -84,7 +90,9 @@
 </head>
 <body>
 
-<h1>Countdown bis zum <span>26.09.2026, 16:00 Uhr</span></h1>
+<img src="logo.png" alt="KIWI2 Server Logo" class="logo">
+
+<h1>Countdown until Launch of KIWI2:</h1>
 
 <div class="countdown" id="countdown">
   <div class="block">
