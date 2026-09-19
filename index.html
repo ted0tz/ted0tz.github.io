@@ -400,22 +400,17 @@
     legL: [rect(24,52,4,12), rect(16,52,4,12), rect(20,48,4,4), rect(24,48,4,4), rect(20,52,4,12), rect(28,52,4,12)]
   };
 
-  // ---- Platzhalter-Textur (farbige Blöcke), damit sofort etwas zu sehen ist,
-  // auch bevor/ohne dass ein echter Minecraft-Skin geladen wurde.
+  // ---- Platzhalter-Textur: bewusst NEUTRAL (grau/Fragezeichen-Look),
+  // damit klar ist, dass hier noch kein echter Skin geladen wurde.
   function buildPlaceholderTexture() {
     const c = document.createElement('canvas');
     c.width = TEX_SIZE; c.height = TEX_SIZE;
     const ctx = c.getContext('2d');
     function fill(r, color) { ctx.fillStyle = color; ctx.fillRect(r.x, r.y, r.w, r.h); }
-    const skin = '#e0a97a', hair = '#4a3222', shirt = '#4ade80', shirtDark = '#33a35b', pants = '#2b3a55';
-    UV.head.forEach(r => fill(r, skin));
-    fill(rect(8,0,8,8), hair); // Haar oben
-    UV.body.forEach(r => fill(r, shirt));
-    UV.armR.forEach(r => fill(r, shirt));
-    UV.armL.forEach(r => fill(r, shirt));
-    fill(rect(44,20,4,3), skin); fill(rect(36,52,4,3), skin); // "Hände" angedeutet
-    UV.legR.forEach(r => fill(r, pants));
-    UV.legL.forEach(r => fill(r, pants));
+    const base = '#6b7280', dark = '#4b5563';
+    [...UV.head, ...UV.body, ...UV.armR, ...UV.armL, ...UV.legR, ...UV.legL].forEach(r => fill(r, base));
+    // Schachbrettartiges Muster als "Platzhalter"-Hinweis auf Vorder-/Rückseite
+    [rect(8,8,4,4), rect(12,12,4,4), rect(20,20,4,4), rect(24,24,4,4)].forEach(r => fill(r, dark));
     const tex = new THREE.CanvasTexture(c);
     tex.magFilter = THREE.NearestFilter;
     tex.minFilter = THREE.NearestFilter;
@@ -492,21 +487,23 @@
   legLPivot.add(legLMesh);
   player.add(legLPivot);
 
-  // ---- Coole Pose: breiter Stand, Arme angewinkelt nach vorne/oben, Kopf leicht gedreht ----
-  headPivot.rotation.y = 0.28;
-  headPivot.rotation.x = -0.05;
+  // ---- Coole Pose: dynamischer Stand, Gewicht auf einem Bein,
+  // Arme leicht geöffnet nach hinten-außen, Kopf selbstbewusst gedreht ----
+  headPivot.rotation.y = 0.25;
+  headPivot.rotation.x = -0.04;
 
-  armRPivot.rotation.x = -0.95;
-  armRPivot.rotation.z = 0.25;
+  armRPivot.rotation.z = 0.5;
+  armRPivot.rotation.x = -0.15;
+  armLPivot.rotation.z = -0.35;
   armLPivot.rotation.x = -0.55;
-  armLPivot.rotation.z = -0.4;
 
-  legRPivot.rotation.z = 0.18;
-  legLPivot.rotation.z = -0.22;
-  legLPivot.rotation.x = 0.12;
+  legRPivot.rotation.z = 0.12;
+  legRPivot.rotation.x = -0.15;
+  legLPivot.rotation.z = -0.18;
+  legLPivot.rotation.x = 0.22;
 
   player.position.y = -18;
-  player.rotation.y = -0.5;
+  player.rotation.y = -0.45;
 
   // ---- Maus-/Touch-Steuerung zum Drehen + Zoomen ----
   let isDragging = false;
@@ -561,7 +558,7 @@
     setStatus('Lade Skin für "' + username + '" …', false);
     downloadBtn.style.display = 'none';
 
-    const skinUrl = 'https://mc-heads.net/skin/' + encodeURIComponent(username) + '?_=' + Date.now();
+    const skinUrl = 'https://mc-heads.net/skin/' + encodeURIComponent(username);
 
     loader.load(
       skinUrl,
@@ -573,12 +570,12 @@
         if (currentTexture) currentTexture.dispose();
         currentTexture = tex;
         currentSkinUrl = skinUrl;
-        setStatus('Skin von "' + username + '" geladen.', false);
+        setStatus('Skin von "' + username + '" geladen. (Kein echter Account? Dann zeigt die API automatisch Steve als Standard.)', false);
         downloadBtn.style.display = 'block';
       },
       undefined,
       () => {
-        setStatus('Skin konnte nicht geladen werden. Benutzernamen prüfen (oder Sandbox blockiert externe Bilder – auf GitHub Pages funktioniert es).', true);
+        setStatus('Skin konnte nicht geladen werden – evtl. blockiert diese Vorschau externe Bilder. Auf GitHub Pages funktioniert es.', true);
       }
     );
   }
