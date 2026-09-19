@@ -326,9 +326,10 @@
   const timer = setInterval(updateCountdown, 1000);
 </script>
 
-<!-- 3D-Skin-Viewer Bibliothek -->
-<script src="https://cdn.jsdelivr.net/npm/skinview3d@3/bundles/skinview3d.bundle.js"></script>
 <script>
+  // Panel-Steuerung läuft unabhängig von der 3D-Bibliothek, damit
+  // Öffnen/Schließen immer funktioniert, auch falls die Bibliothek
+  // mal langsam lädt oder ein CDN ausfällt.
   const settingsBtn = document.getElementById('settingsBtn');
   const overlay = document.getElementById('overlay');
   const closeBtn = document.getElementById('closeBtn');
@@ -336,39 +337,50 @@
   const loadSkinBtn = document.getElementById('loadSkinBtn');
   const skinStatus = document.getElementById('skinStatus');
   const downloadBtn = document.getElementById('downloadBtn');
-  const canvas = document.getElementById('skin_canvas');
 
-  let currentSkinUrl = null;
-
-  // Panel öffnen / schließen
-  settingsBtn.addEventListener('click', () => {
-    overlay.classList.add('open');
-  });
-  closeBtn.addEventListener('click', () => {
-    overlay.classList.remove('open');
-  });
+  settingsBtn.addEventListener('click', () => overlay.classList.add('open'));
+  closeBtn.addEventListener('click', () => overlay.classList.remove('open'));
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) overlay.classList.remove('open');
   });
-
-  // 3D-Viewer initialisieren (mit Standard-Skin)
-  const skinViewer = new skinview3d.SkinViewer({
-    canvas: canvas,
-    width: 260,
-    height: 340,
-    skin: "https://mc-heads.net/skin/MHF_Steve"
-  });
-  skinViewer.controls = skinview3d.createOrbitControls(skinViewer);
-  skinViewer.controls.enableRotate = true;
-  skinViewer.controls.enableZoom = true;
-  skinViewer.controls.enablePan = false;
-  skinViewer.autoRotate = true;
-  skinViewer.autoRotateSpeed = 1.2;
 
   function setStatus(text, isError) {
     skinStatus.textContent = text;
     skinStatus.classList.toggle('error', !!isError);
   }
+
+  loadSkinBtn.disabled = true;
+  setStatus('3D-Viewer wird geladen …', false);
+</script>
+
+<!-- 3D-Skin-Viewer Bibliothek (ESM-Build von jsDelivr, robuster als ein einzelnes Bundle) -->
+<script type="module">
+  let skinview3d;
+  try {
+    skinview3d = await import('https://cdn.jsdelivr.net/npm/skinview3d/+esm');
+  } catch (err) {
+    setStatus('3D-Bibliothek konnte nicht geladen werden. Bitte Seite neu laden.', true);
+    throw err;
+  }
+
+  const canvas = document.getElementById('skin_canvas');
+  let currentSkinUrl = null;
+
+  const skinViewer = new skinview3d.SkinViewer({
+    canvas: canvas,
+    width: 260,
+    height: 340,
+    skin: 'https://mc-heads.net/skin/MHF_Steve'
+  });
+  const controls = skinview3d.createOrbitControls(skinViewer);
+  controls.enableRotate = true;
+  controls.enableZoom = true;
+  controls.enablePan = false;
+  skinViewer.autoRotate = true;
+  skinViewer.autoRotateSpeed = 1.2;
+
+  loadSkinBtn.disabled = false;
+  setStatus('Bereit. Benutzernamen eingeben und "Anzeigen" klicken.', false);
 
   async function loadSkinForUser(username) {
     username = username.trim();
@@ -380,10 +392,9 @@
     setStatus('Lade Skin für "' + username + '" …', false);
     downloadBtn.style.display = 'none';
 
-    const skinUrl = 'https://mc-heads.net/skin/' + encodeURIComponent(username);
+    const skinUrl = 'https://mc-heads.net/skin/' + encodeURIComponent(username) + '?_=' + Date.now();
 
     try {
-      // Erst prüfen, ob der Skin geladen werden kann
       await new Promise((resolve, reject) => {
         const testImg = new Image();
         testImg.crossOrigin = 'anonymous';
@@ -392,12 +403,13 @@
         testImg.src = skinUrl;
       });
 
-      skinViewer.loadSkin(skinUrl);
+      await skinViewer.loadSkin(skinUrl);
       currentSkinUrl = skinUrl;
       setStatus('Skin von "' + username + '" geladen.', false);
       downloadBtn.style.display = 'block';
     } catch (err) {
-      setStatus('Skin konnte nicht geladen werden. Benutzername prüfen.', true);
+      console.error(err);
+      setStatus('Skin konnte nicht geladen werden. Benutzernamen prüfen.', true);
     }
   }
 
@@ -420,7 +432,6 @@
       a.remove();
       URL.revokeObjectURL(blobUrl);
     } catch (err) {
-      // Fallback: Skin in neuem Tab öffnen, falls Download blockiert wird
       window.open(currentSkinUrl, '_blank');
     }
   });
