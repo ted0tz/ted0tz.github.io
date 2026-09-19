@@ -86,9 +86,181 @@
     font-size: 0.8rem;
     opacity: 0.5;
   }
+
+  /* Zahnrad-Button */
+  .settings-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    color: var(--text);
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    transition: transform 0.4s ease, background 0.2s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  }
+  .settings-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: rotate(45deg);
+  }
+
+  /* Overlay + Panel */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: 20px;
+  }
+  .overlay.open {
+    display: flex;
+  }
+  .panel {
+    background: linear-gradient(160deg, #0d2412, #071008);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    padding: 30px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .panel h2 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: var(--accent);
+  }
+  .close-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 1.4rem;
+    cursor: pointer;
+    opacity: 0.6;
+    line-height: 1;
+  }
+  .close-btn:hover {
+    opacity: 1;
+  }
+  .skin-input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .skin-input-row input {
+    flex: 1;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+    font-size: 0.95rem;
+    outline: none;
+  }
+  .skin-input-row input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+  }
+  .skin-input-row input:focus {
+    border-color: var(--accent);
+  }
+  .skin-btn {
+    padding: 12px 18px;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent);
+    color: #06210c;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: filter 0.2s ease;
+  }
+  .skin-btn:hover {
+    filter: brightness(1.1);
+  }
+  .skin-viewer-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 14px;
+    min-height: 300px;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  #skin_canvas {
+    border-radius: 14px;
+  }
+  .skin-status {
+    font-size: 0.85rem;
+    opacity: 0.7;
+    margin-bottom: 14px;
+    min-height: 1.2em;
+  }
+  .skin-status.error {
+    color: #ff8a8a;
+    opacity: 1;
+  }
+  .download-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 0.95rem;
+    display: none;
+  }
+  .download-btn:hover {
+    background: rgba(74, 222, 128, 0.12);
+  }
 </style>
 </head>
 <body>
+
+<!-- Zahnrad-Button oben rechts -->
+<button class="settings-btn" id="settingsBtn" title="Einstellungen" aria-label="Einstellungen öffnen">⚙️</button>
+
+<!-- Skin-Panel -->
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <button class="close-btn" id="closeBtn" aria-label="Schließen">✕</button>
+    <h2>Skins</h2>
+
+    <div class="skin-input-row">
+      <input type="text" id="usernameInput" placeholder="Minecraft-Benutzername" autocomplete="off">
+      <button class="skin-btn" id="loadSkinBtn">Anzeigen</button>
+    </div>
+
+    <div class="skin-status" id="skinStatus"></div>
+
+    <div class="skin-viewer-wrap">
+      <canvas id="skin_canvas" width="260" height="340"></canvas>
+    </div>
+
+    <button class="download-btn" id="downloadBtn">Skin herunterladen</button>
+  </div>
+</div>
 
 <img src="logo.png" alt="KIWI2 Server Logo" class="logo">
 
@@ -152,6 +324,106 @@
 
   updateCountdown();
   const timer = setInterval(updateCountdown, 1000);
+</script>
+
+<!-- 3D-Skin-Viewer Bibliothek -->
+<script src="https://cdn.jsdelivr.net/npm/skinview3d@3/bundles/skinview3d.bundle.js"></script>
+<script>
+  const settingsBtn = document.getElementById('settingsBtn');
+  const overlay = document.getElementById('overlay');
+  const closeBtn = document.getElementById('closeBtn');
+  const usernameInput = document.getElementById('usernameInput');
+  const loadSkinBtn = document.getElementById('loadSkinBtn');
+  const skinStatus = document.getElementById('skinStatus');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const canvas = document.getElementById('skin_canvas');
+
+  let currentSkinUrl = null;
+
+  // Panel öffnen / schließen
+  settingsBtn.addEventListener('click', () => {
+    overlay.classList.add('open');
+  });
+  closeBtn.addEventListener('click', () => {
+    overlay.classList.remove('open');
+  });
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+
+  // 3D-Viewer initialisieren (mit Standard-Skin)
+  const skinViewer = new skinview3d.SkinViewer({
+    canvas: canvas,
+    width: 260,
+    height: 340,
+    skin: "https://mc-heads.net/skin/MHF_Steve"
+  });
+  skinViewer.controls = skinview3d.createOrbitControls(skinViewer);
+  skinViewer.controls.enableRotate = true;
+  skinViewer.controls.enableZoom = true;
+  skinViewer.controls.enablePan = false;
+  skinViewer.autoRotate = true;
+  skinViewer.autoRotateSpeed = 1.2;
+
+  function setStatus(text, isError) {
+    skinStatus.textContent = text;
+    skinStatus.classList.toggle('error', !!isError);
+  }
+
+  async function loadSkinForUser(username) {
+    username = username.trim();
+    if (!username) {
+      setStatus('Bitte einen Benutzernamen eingeben.', true);
+      return;
+    }
+
+    setStatus('Lade Skin für "' + username + '" …', false);
+    downloadBtn.style.display = 'none';
+
+    const skinUrl = 'https://mc-heads.net/skin/' + encodeURIComponent(username);
+
+    try {
+      // Erst prüfen, ob der Skin geladen werden kann
+      await new Promise((resolve, reject) => {
+        const testImg = new Image();
+        testImg.crossOrigin = 'anonymous';
+        testImg.onload = resolve;
+        testImg.onerror = reject;
+        testImg.src = skinUrl;
+      });
+
+      skinViewer.loadSkin(skinUrl);
+      currentSkinUrl = skinUrl;
+      setStatus('Skin von "' + username + '" geladen.', false);
+      downloadBtn.style.display = 'block';
+    } catch (err) {
+      setStatus('Skin konnte nicht geladen werden. Benutzername prüfen.', true);
+    }
+  }
+
+  loadSkinBtn.addEventListener('click', () => loadSkinForUser(usernameInput.value));
+  usernameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') loadSkinForUser(usernameInput.value);
+  });
+
+  downloadBtn.addEventListener('click', async () => {
+    if (!currentSkinUrl) return;
+    try {
+      const response = await fetch(currentSkinUrl, { mode: 'cors' });
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = (usernameInput.value.trim() || 'skin') + '.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      // Fallback: Skin in neuem Tab öffnen, falls Download blockiert wird
+      window.open(currentSkinUrl, '_blank');
+    }
+  });
 </script>
 
 </body>
