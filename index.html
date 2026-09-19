@@ -200,11 +200,20 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    background: rgba(0, 0, 0, 0.3);
+    background: radial-gradient(circle at 50% 30%, rgba(74,222,128,0.08), rgba(0,0,0,0.35));
     border-radius: 14px;
-    min-height: 300px;
-    margin-bottom: 16px;
+    min-height: 320px;
+    margin-bottom: 8px;
     position: relative;
+    cursor: grab;
+  }
+  .skin-viewer-wrap:active {
+    cursor: grabbing;
+  }
+  .skin-hint {
+    font-size: 0.75rem;
+    opacity: 0.45;
+    margin-bottom: 14px;
   }
   #skin_canvas {
     border-radius: 14px;
@@ -255,8 +264,9 @@
     <div class="skin-status" id="skinStatus"></div>
 
     <div class="skin-viewer-wrap">
-      <canvas id="skin_canvas" width="260" height="340"></canvas>
+      <canvas id="skin_canvas" width="280" height="360"></canvas>
     </div>
+    <div class="skin-hint">Zum Drehen ziehen, mit dem Mausrad zoomen</div>
 
     <button class="download-btn" id="downloadBtn">Skin herunterladen</button>
   </div>
@@ -327,9 +337,6 @@
 </script>
 
 <script>
-  // Panel-Steuerung läuft unabhängig von der 3D-Bibliothek, damit
-  // Öffnen/Schließen immer funktioniert, auch falls die Bibliothek
-  // mal langsam lädt oder ein CDN ausfällt.
   const settingsBtn = document.getElementById('settingsBtn');
   const overlay = document.getElementById('overlay');
   const closeBtn = document.getElementById('closeBtn');
@@ -337,6 +344,8 @@
   const loadSkinBtn = document.getElementById('loadSkinBtn');
   const skinStatus = document.getElementById('skinStatus');
   const downloadBtn = document.getElementById('downloadBtn');
+  const viewerWrap = document.querySelector('.skin-viewer-wrap');
+  const canvas = document.getElementById('skin_canvas');
 
   settingsBtn.addEventListener('click', () => overlay.classList.add('open'));
   closeBtn.addEventListener('click', () => overlay.classList.remove('open'));
@@ -348,41 +357,201 @@
     skinStatus.textContent = text;
     skinStatus.classList.toggle('error', !!isError);
   }
-
-  loadSkinBtn.disabled = true;
-  setStatus('3D-Viewer wird geladen …', false);
 </script>
 
-<!-- 3D-Skin-Viewer Bibliothek (ESM-Build von jsDelivr, robuster als ein einzelnes Bundle) -->
-<script type="module">
-  let skinview3d;
-  try {
-    skinview3d = await import('https://cdn.jsdelivr.net/npm/skinview3d/+esm');
-  } catch (err) {
-    setStatus('3D-Bibliothek konnte nicht geladen werden. Bitte Seite neu laden.', true);
-    throw err;
+<!-- Three.js Kernbibliothek (zuverlässiges CDN) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  if (typeof THREE === 'undefined') {
+    setStatus('3D-Bibliothek konnte nicht geladen werden.', true);
+    return;
   }
 
-  const canvas = document.getElementById('skin_canvas');
-  let currentSkinUrl = null;
+  const TEX_SIZE = 64;
 
-  const skinViewer = new skinview3d.SkinViewer({
-    canvas: canvas,
-    width: 260,
-    height: 340,
-    skin: 'https://mc-heads.net/skin/MHF_Steve'
-  });
-  const controls = skinview3d.createOrbitControls(skinViewer);
-  controls.enableRotate = true;
-  controls.enableZoom = true;
-  controls.enablePan = false;
-  skinViewer.autoRotate = true;
-  skinViewer.autoRotateSpeed = 1.2;
+  // ---- UV-Hilfsfunktion: ordnet einem BoxGeometry-Würfel die passenden
+  // Ausschnitte aus der 64x64-Skin-Textur zu (Reihenfolge: links, rechts, oben, unten, vorne, hinten)
+  function applyUV(geometry, regions) {
+    const uv = geometry.attributes.uv;
+    for (let face = 0; face < 6; face++) {
+      const r = regions[face];
+      const u0 = r.x / TEX_SIZE;
+      const u1 = (r.x + r.w) / TEX_SIZE;
+      const v0 = 1 - r.y / TEX_SIZE;
+      const v1 = 1 - (r.y + r.h) / TEX_SIZE;
+      const base = face * 4;
+      uv.setXY(base + 0, u0, v0);
+      uv.setXY(base + 1, u1, v0);
+      uv.setXY(base + 2, u0, v1);
+      uv.setXY(base + 3, u1, v1);
+    }
+    uv.needsUpdate = true;
+  }
 
-  loadSkinBtn.disabled = false;
+  function rect(x, y, w, h) { return { x, y, w, h }; }
+
+  const UV = {
+    head: [rect(16,8,8,8), rect(0,8,8,8), rect(8,0,8,8), rect(16,0,8,8), rect(8,8,8,8), rect(24,8,8,8)],
+    body: [rect(28,20,4,12), rect(16,20,4,12), rect(20,16,8,4), rect(28,16,8,4), rect(20,20,8,12), rect(32,20,8,12)],
+    armR: [rect(48,20,4,12), rect(40,20,4,12), rect(44,16,4,4), rect(48,16,4,4), rect(44,20,4,12), rect(52,20,4,12)],
+    armL: [rect(40,52,4,12), rect(32,52,4,12), rect(36,48,4,4), rect(40,48,4,4), rect(36,52,4,12), rect(44,52,4,12)],
+    legR: [rect(8,20,4,12), rect(0,20,4,12), rect(4,16,4,4), rect(8,16,4,4), rect(4,20,4,12), rect(12,20,4,12)],
+    legL: [rect(24,52,4,12), rect(16,52,4,12), rect(20,48,4,4), rect(24,48,4,4), rect(20,52,4,12), rect(28,52,4,12)]
+  };
+
+  // ---- Platzhalter-Textur (farbige Blöcke), damit sofort etwas zu sehen ist,
+  // auch bevor/ohne dass ein echter Minecraft-Skin geladen wurde.
+  function buildPlaceholderTexture() {
+    const c = document.createElement('canvas');
+    c.width = TEX_SIZE; c.height = TEX_SIZE;
+    const ctx = c.getContext('2d');
+    function fill(r, color) { ctx.fillStyle = color; ctx.fillRect(r.x, r.y, r.w, r.h); }
+    const skin = '#e0a97a', hair = '#4a3222', shirt = '#4ade80', shirtDark = '#33a35b', pants = '#2b3a55';
+    UV.head.forEach(r => fill(r, skin));
+    fill(rect(8,0,8,8), hair); // Haar oben
+    UV.body.forEach(r => fill(r, shirt));
+    UV.armR.forEach(r => fill(r, shirt));
+    UV.armL.forEach(r => fill(r, shirt));
+    fill(rect(44,20,4,3), skin); fill(rect(36,52,4,3), skin); // "Hände" angedeutet
+    UV.legR.forEach(r => fill(r, pants));
+    UV.legL.forEach(r => fill(r, pants));
+    const tex = new THREE.CanvasTexture(c);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    return tex;
+  }
+
+  // ---- Szene aufbauen ----
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(35, 280 / 360, 0.1, 1000);
+  camera.position.set(0, 20, 62);
+  camera.lookAt(0, 16, 0);
+
+  const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+  renderer.setSize(280, 360, false);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+  dirLight.position.set(3, 6, 5);
+  scene.add(dirLight);
+
+  let currentTexture = buildPlaceholderTexture();
+  let material = new THREE.MeshLambertMaterial({ map: currentTexture, transparent: true, alphaTest: 0.2 });
+
+  function box(w, h, d, regions) {
+    const geo = new THREE.BoxGeometry(w, h, d);
+    applyUV(geo, regions);
+    return new THREE.Mesh(geo, material);
+  }
+
+  const player = new THREE.Group();
+  scene.add(player);
+
+  // Kopf
+  const headPivot = new THREE.Group();
+  headPivot.position.set(0, 24, 0);
+  const headMesh = box(8, 8, 8, UV.head);
+  headMesh.position.set(0, 4, 0);
+  headPivot.add(headMesh);
+  player.add(headPivot);
+
+  // Körper
+  const bodyMesh = box(8, 12, 4, UV.body);
+  bodyMesh.position.set(0, 18, 0);
+  player.add(bodyMesh);
+
+  // Arme (Pivot an der Schulter)
+  const armRPivot = new THREE.Group();
+  armRPivot.position.set(-6, 24, 0);
+  const armRMesh = box(4, 12, 4, UV.armR);
+  armRMesh.position.set(0, -6, 0);
+  armRPivot.add(armRMesh);
+  player.add(armRPivot);
+
+  const armLPivot = new THREE.Group();
+  armLPivot.position.set(6, 24, 0);
+  const armLMesh = box(4, 12, 4, UV.armL);
+  armLMesh.position.set(0, -6, 0);
+  armLPivot.add(armLMesh);
+  player.add(armLPivot);
+
+  // Beine (Pivot an der Hüfte)
+  const legRPivot = new THREE.Group();
+  legRPivot.position.set(-2, 12, 0);
+  const legRMesh = box(4, 12, 4, UV.legR);
+  legRMesh.position.set(0, -6, 0);
+  legRPivot.add(legRMesh);
+  player.add(legRPivot);
+
+  const legLPivot = new THREE.Group();
+  legLPivot.position.set(2, 12, 0);
+  const legLMesh = box(4, 12, 4, UV.legL);
+  legLMesh.position.set(0, -6, 0);
+  legLPivot.add(legLMesh);
+  player.add(legLPivot);
+
+  // ---- Coole Pose: breiter Stand, Arme angewinkelt nach vorne/oben, Kopf leicht gedreht ----
+  headPivot.rotation.y = 0.28;
+  headPivot.rotation.x = -0.05;
+
+  armRPivot.rotation.x = -0.95;
+  armRPivot.rotation.z = 0.25;
+  armLPivot.rotation.x = -0.55;
+  armLPivot.rotation.z = -0.4;
+
+  legRPivot.rotation.z = 0.18;
+  legLPivot.rotation.z = -0.22;
+  legLPivot.rotation.x = 0.12;
+
+  player.position.y = -18;
+  player.rotation.y = -0.5;
+
+  // ---- Maus-/Touch-Steuerung zum Drehen + Zoomen ----
+  let isDragging = false;
+  let lastX = 0, lastY = 0;
+  let autoRotate = true;
+  let zoom = 62;
+
+  function onDown(x, y) { isDragging = true; autoRotate = false; lastX = x; lastY = y; }
+  function onMove(x, y) {
+    if (!isDragging) return;
+    const dx = x - lastX;
+    const dy = y - lastY;
+    player.rotation.y += dx * 0.01;
+    player.rotation.x = Math.max(-0.5, Math.min(0.5, player.rotation.x + dy * 0.01));
+    lastX = x; lastY = y;
+  }
+  function onUp() { isDragging = false; }
+
+  viewerWrap.addEventListener('mousedown', (e) => onDown(e.clientX, e.clientY));
+  window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
+  window.addEventListener('mouseup', onUp);
+  viewerWrap.addEventListener('touchstart', (e) => { const t = e.touches[0]; onDown(t.clientX, t.clientY); }, { passive: true });
+  viewerWrap.addEventListener('touchmove', (e) => { const t = e.touches[0]; onMove(t.clientX, t.clientY); }, { passive: true });
+  viewerWrap.addEventListener('touchend', onUp);
+  viewerWrap.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    zoom = Math.max(35, Math.min(110, zoom + e.deltaY * 0.05));
+    camera.position.z = zoom;
+  }, { passive: false });
+
+  function animate() {
+    requestAnimationFrame(animate);
+    if (autoRotate) player.rotation.y += 0.006;
+    renderer.render(scene, camera);
+  }
+  animate();
+
   setStatus('Bereit. Benutzernamen eingeben und "Anzeigen" klicken.', false);
 
-  async function loadSkinForUser(username) {
+  // ---- Skin für einen Benutzernamen laden ----
+  let currentSkinUrl = null;
+  const loader = new THREE.TextureLoader();
+  loader.setCrossOrigin('anonymous');
+
+  function loadSkinForUser(username) {
     username = username.trim();
     if (!username) {
       setStatus('Bitte einen Benutzernamen eingeben.', true);
@@ -394,23 +563,24 @@
 
     const skinUrl = 'https://mc-heads.net/skin/' + encodeURIComponent(username) + '?_=' + Date.now();
 
-    try {
-      await new Promise((resolve, reject) => {
-        const testImg = new Image();
-        testImg.crossOrigin = 'anonymous';
-        testImg.onload = resolve;
-        testImg.onerror = reject;
-        testImg.src = skinUrl;
-      });
-
-      await skinViewer.loadSkin(skinUrl);
-      currentSkinUrl = skinUrl;
-      setStatus('Skin von "' + username + '" geladen.', false);
-      downloadBtn.style.display = 'block';
-    } catch (err) {
-      console.error(err);
-      setStatus('Skin konnte nicht geladen werden. Benutzernamen prüfen.', true);
-    }
+    loader.load(
+      skinUrl,
+      (tex) => {
+        tex.magFilter = THREE.NearestFilter;
+        tex.minFilter = THREE.NearestFilter;
+        material.map = tex;
+        material.needsUpdate = true;
+        if (currentTexture) currentTexture.dispose();
+        currentTexture = tex;
+        currentSkinUrl = skinUrl;
+        setStatus('Skin von "' + username + '" geladen.', false);
+        downloadBtn.style.display = 'block';
+      },
+      undefined,
+      () => {
+        setStatus('Skin konnte nicht geladen werden. Benutzernamen prüfen (oder Sandbox blockiert externe Bilder – auf GitHub Pages funktioniert es).', true);
+      }
+    );
   }
 
   loadSkinBtn.addEventListener('click', () => loadSkinForUser(usernameInput.value));
@@ -435,6 +605,7 @@
       window.open(currentSkinUrl, '_blank');
     }
   });
+})();
 </script>
 
 </body>
