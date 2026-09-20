@@ -117,6 +117,105 @@
     color: #06210c;
   }
 
+  /* Account-Button oben links */
+  .account-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 0 18px;
+    height: 52px;
+    border-radius: 26px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    color: var(--text);
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    z-index: 100;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    max-width: 220px;
+  }
+  .account-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+  .account-btn .acc-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .account-btn.logged-in {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Auth-Overlay */
+  .auth-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 22px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 4px;
+  }
+  .auth-tab-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 9px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  .auth-tab-btn.active {
+    background: var(--accent);
+    color: #06210c;
+  }
+  .auth-field {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+  }
+  .auth-field::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+  }
+  .auth-submit {
+    width: 100%;
+    padding: 13px;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent);
+    color: #06210c;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .auth-error {
+    color: #ff8a8a;
+    font-size: 0.85rem;
+    margin-top: 10px;
+    min-height: 1.2em;
+  }
+  .logged-in-box {
+    text-align: center;
+  }
+  .logged-in-box p {
+    opacity: 0.8;
+    margin-bottom: 18px;
+    word-break: break-all;
+  }
+
   /* Fächer-Menü */
   .fab-menu {
     position: fixed;
@@ -200,6 +299,20 @@
     margin-bottom: 24px;
     color: var(--accent);
     text-align: center;
+  }
+
+  /* Sperr-Hinweis (nicht angemeldet) */
+  .locked-notice {
+    padding: 30px 20px;
+    text-align: center;
+    border: 2px dashed rgba(255, 255, 255, 0.25);
+    border-radius: 14px;
+    margin-bottom: 16px;
+  }
+  .locked-notice p {
+    opacity: 0.75;
+    margin-bottom: 14px;
+    font-size: 0.9rem;
   }
 
   /* Upload-Bereich */
@@ -320,9 +433,85 @@
   .download-btn:hover {
     background: rgba(74, 222, 128, 0.12);
   }
+
+  /* Galerie */
+  .gallery-section {
+    margin-top: 32px;
+    text-align: left;
+  }
+  .gallery-section h3 {
+    font-size: 1.05rem;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .gallery-search-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .gallery-search {
+    flex: 1;
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+    font-size: 0.9rem;
+  }
+  .gallery-refresh-btn {
+    padding: 0 16px;
+    flex-shrink: 0;
+  }
+  .gallery-search::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+  }
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+  }
+  .gallery-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .gallery-item:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+  .gallery-item img {
+    width: 100%;
+    height: 90px;
+    object-fit: cover;
+    display: block;
+    background: rgba(0,0,0,0.3);
+  }
+  .gallery-item .gi-meta {
+    padding: 6px 8px;
+    font-size: 0.7rem;
+    opacity: 0.65;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .gallery-empty {
+    opacity: 0.5;
+    font-size: 0.85rem;
+    padding: 20px 0;
+    text-align: center;
+  }
 </style>
 </head>
 <body>
+
+<!-- Account-Button oben links -->
+<button class="account-btn" id="accountBtn" title="Name">
+  <span id="accountBtnIcon">👤</span>
+  <span class="acc-name" id="accountBtnText">Name festlegen</span>
+</button>
 
 <!-- Zahnrad-Button oben rechts -->
 <button class="settings-btn" id="settingsBtn" title="Einstellungen" aria-label="Einstellungen öffnen">⚙️</button>
@@ -333,11 +522,36 @@
   <button class="fab-option" id="openHeadsBtn">🧑 Heads</button>
 </div>
 
+<!-- Vollbild: Name festlegen -->
+<div class="fullscreen-overlay" id="authOverlay">
+  <button class="fullscreen-close" id="authCloseBtn" aria-label="Schließen">✕</button>
+  <div class="fs-content">
+    <h2>Dein Name</h2>
+
+    <div id="authLoggedOutBox">
+      <p style="opacity:0.7; font-size:0.9rem; margin-bottom:16px; text-align:center;">Gib einen Namen ein, unter dem deine Uploads angezeigt werden.</p>
+      <input type="text" class="auth-field" id="authEmail" placeholder="Dein Name" autocomplete="off" maxlength="30">
+      <button class="auth-submit" id="authSubmitBtn">Speichern</button>
+      <div class="auth-error" id="authError"></div>
+    </div>
+
+    <div id="authLoggedInBox" class="logged-in-box" style="display:none">
+      <p>Du postest aktuell als<br><strong id="authCurrentEmail"></strong></p>
+      <button class="auth-submit" id="authLogoutBtn" style="background:transparent; border:1px solid var(--accent); color:var(--accent);">Namen ändern</button>
+    </div>
+  </div>
+</div>
+
 <!-- Vollbild: Mapart -->
 <div class="fullscreen-overlay" id="mapartOverlay">
   <button class="fullscreen-close" id="mapartCloseBtn" aria-label="Schließen">✕</button>
   <div class="fs-content">
     <h2>Mapart</h2>
+
+    <div class="locked-notice" id="mapartLockedNotice" style="display:none">
+      <p>Gib zuerst einen Namen ein, um ein Bild hochzuladen.</p>
+      <button class="skin-btn" id="mapartLoginPromptBtn">Name festlegen</button>
+    </div>
 
     <label class="upload-area" id="mapartDropArea" for="mapartFile">
       <input type="file" id="mapartFile" accept="image/*" hidden>
@@ -354,6 +568,16 @@
     </div>
 
     <div class="skin-status" id="mapartStatus">Wähle ein Bild aus – es wird hochgeladen und du bekommst einen öffentlichen Link, den auch andere öffnen können.</div>
+
+    <div class="gallery-section">
+      <h3>Alle Mapart-Bilder</h3>
+      <div class="gallery-search-row">
+        <input type="text" class="gallery-search" id="mapartSearch" placeholder="Suchen (Dateiname oder Nutzer) …">
+        <button class="skin-btn gallery-refresh-btn" id="mapartRefreshBtn" title="Aktualisieren">🔄</button>
+      </div>
+      <div class="gallery-grid" id="mapartGallery"></div>
+      <div class="gallery-empty" id="mapartGalleryEmpty" style="display:none">Noch keine Bilder hochgeladen.</div>
+    </div>
   </div>
 </div>
 
@@ -362,6 +586,11 @@
   <button class="fullscreen-close" id="headsCloseBtn" aria-label="Schließen">✕</button>
   <div class="fs-content">
     <h2>Heads</h2>
+
+    <div class="locked-notice" id="headsLockedNotice" style="display:none">
+      <p>Gib zuerst einen Namen ein, um einen Skin hochzuladen.</p>
+      <button class="skin-btn" id="headsLoginPromptBtn">Name festlegen</button>
+    </div>
 
     <label class="upload-area" id="headsDropArea" for="headsFile">
       <input type="file" id="headsFile" accept="image/png,.png" hidden>
@@ -380,6 +609,16 @@
     <div class="url-row" id="headsUrlRow" style="display:none; margin-top:10px;">
       <input type="text" id="headsUrlOutput" readonly>
       <button class="skin-btn" id="headsCopyBtn">Kopieren</button>
+    </div>
+
+    <div class="gallery-section">
+      <h3>Alle hochgeladenen Köpfe</h3>
+      <div class="gallery-search-row">
+        <input type="text" class="gallery-search" id="headsSearch" placeholder="Suchen (Dateiname oder Nutzer) …">
+        <button class="skin-btn gallery-refresh-btn" id="headsRefreshBtn" title="Aktualisieren">🔄</button>
+      </div>
+      <div class="gallery-grid" id="headsGallery"></div>
+      <div class="gallery-empty" id="headsGalleryEmpty" style="display:none">Noch keine Skins hochgeladen.</div>
     </div>
   </div>
 </div>
@@ -408,6 +647,43 @@
 </div>
 
 <footer>Wird automatisch aktualisiert</footer>
+
+<script>
+  // =========================================================
+  // WICHTIG: JSONBin.io-Zugangsdaten hier eintragen (kostenlos, ~2 Min):
+  // 1. Account erstellen: https://jsonbin.io
+  // 2. Auf "API Keys" -> deinen "X-Master-Key" kopieren -> unten einfügen
+  // 3. Einen neuen Bin erstellen mit genau diesem Inhalt:
+  //    {"mapart": [], "heads": []}
+  //    -> die angezeigte Bin-ID kopieren -> unten einfügen
+  // =========================================================
+  const JSONBIN_API_KEY = '$2a$10$3gYFmnTwv.xricB92ASpA.kHVEEcyOljwHs4chLEggT0VYctEwH/2';
+  const JSONBIN_BIN_ID = '6aafe2f7ac6210605ae2a367';
+
+  const jsonbinReady = JSONBIN_API_KEY !== 'DEIN_JSONBIN_API_KEY_HIER' && JSONBIN_BIN_ID !== 'DEINE_BIN_ID_HIER';
+
+  async function fetchBinData() {
+    const res = await fetch('https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID + '/latest', {
+      headers: { 'X-Master-Key': JSONBIN_API_KEY }
+    });
+    if (!res.ok) throw new Error('JSONBIN_READ_FAILED');
+    const json = await res.json();
+    return json.record || { mapart: [], heads: [] };
+  }
+
+  async function addPost(type, entry) {
+    const data = await fetchBinData();
+    if (!Array.isArray(data[type])) data[type] = [];
+    data[type].unshift({ ...entry, createdAt: Date.now() });
+    const res = await fetch('https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('JSONBIN_WRITE_FAILED');
+    return data[type];
+  }
+</script>
 
 <script>
   // Zieldatum: 26.09.2026, 16:00 Uhr (lokale Zeitzone des Betrachters)
@@ -493,6 +769,77 @@
     }
   });
 
+  // =========================================================
+  // NAME: einfacher Anzeigename statt echtem Login (localStorage)
+  // =========================================================
+  const accountBtn = document.getElementById('accountBtn');
+  const accountBtnText = document.getElementById('accountBtnText');
+  const authOverlay = document.getElementById('authOverlay');
+  const authCloseBtn = document.getElementById('authCloseBtn');
+  const authEmail = document.getElementById('authEmail');
+  const authSubmitBtn = document.getElementById('authSubmitBtn');
+  const authError = document.getElementById('authError');
+  const authLoggedOutBox = document.getElementById('authLoggedOutBox');
+  const authLoggedInBox = document.getElementById('authLoggedInBox');
+  const authCurrentEmail = document.getElementById('authCurrentEmail');
+  const authLogoutBtn = document.getElementById('authLogoutBtn');
+  const mapartLockedNotice = document.getElementById('mapartLockedNotice');
+  const mapartLoginPromptBtn = document.getElementById('mapartLoginPromptBtn');
+  const headsLockedNotice = document.getElementById('headsLockedNotice');
+  const headsLoginPromptBtn = document.getElementById('headsLoginPromptBtn');
+
+  const NAME_KEY = 'kiwi2_display_name';
+
+  function getDisplayName() {
+    return (localStorage.getItem(NAME_KEY) || '').trim();
+  }
+
+  function openAuthOverlay() {
+    authOverlay.classList.add('open');
+    authError.textContent = '';
+    authEmail.value = getDisplayName();
+  }
+  accountBtn.addEventListener('click', openAuthOverlay);
+  mapartLoginPromptBtn.addEventListener('click', openAuthOverlay);
+  headsLoginPromptBtn.addEventListener('click', openAuthOverlay);
+  authCloseBtn.addEventListener('click', () => authOverlay.classList.remove('open'));
+
+  authSubmitBtn.addEventListener('click', () => {
+    const name = authEmail.value.trim();
+    if (!name) {
+      authError.textContent = 'Bitte einen Namen eingeben.';
+      return;
+    }
+    localStorage.setItem(NAME_KEY, name);
+    authOverlay.classList.remove('open');
+    updateAuthUI(name);
+  });
+
+  authLogoutBtn.addEventListener('click', () => {
+    openAuthOverlay();
+  });
+
+  function updateAuthUI(name) {
+    if (name) {
+      accountBtn.classList.add('logged-in');
+      accountBtnText.textContent = name;
+      authLoggedOutBox.style.display = 'none';
+      authLoggedInBox.style.display = 'block';
+      authCurrentEmail.textContent = name;
+      mapartLockedNotice.style.display = 'none';
+      headsLockedNotice.style.display = 'none';
+    } else {
+      accountBtn.classList.remove('logged-in');
+      accountBtnText.textContent = 'Name festlegen';
+      authLoggedOutBox.style.display = 'block';
+      authLoggedInBox.style.display = 'none';
+      mapartLockedNotice.style.display = 'block';
+      headsLockedNotice.style.display = 'block';
+    }
+  }
+
+  updateAuthUI(getDisplayName());
+
   // ---- Echter Upload zu imgbb (öffentliche Bild-URL) ----
   async function uploadToImgbb(file) {
     if (!IMGBB_API_KEY || IMGBB_API_KEY === 'DEIN_IMGBB_API_KEY_HIER') {
@@ -507,6 +854,74 @@
     const data = await response.json();
     if (!data.success) throw new Error('UPLOAD_FAILED');
     return data.data.url;
+  }
+
+  // ---- Upload-Metadaten in JSONBin speichern (für Galerie/Suche) ----
+  async function savePost(type, entry) {
+    if (!jsonbinReady) return;
+    try {
+      await addPost(type, entry);
+    } catch (err) {
+      console.error('JSONBin-Speichern fehlgeschlagen:', err);
+    }
+  }
+
+  // ---- Galerie: aus JSONBin laden, durchsuchbar rendern, manuell aktualisierbar ----
+  function setupGallery(type, gridEl, emptyEl, searchEl, refreshBtn, onItemClick) {
+    let allDocs = [];
+
+    function render() {
+      const query = searchEl.value.trim().toLowerCase();
+      const filtered = query
+        ? allDocs.filter(d =>
+            (d.filename || '').toLowerCase().includes(query) ||
+            (d.uploader || '').toLowerCase().includes(query))
+        : allDocs;
+
+      gridEl.innerHTML = '';
+      emptyEl.style.display = filtered.length === 0 ? 'block' : 'none';
+
+      filtered.forEach((d) => {
+        const item = document.createElement('div');
+        item.className = 'gallery-item';
+        const img = document.createElement('img');
+        img.src = d.url;
+        img.loading = 'lazy';
+        img.alt = d.filename || '';
+        const meta = document.createElement('div');
+        meta.className = 'gi-meta';
+        meta.textContent = d.uploader || 'Unbekannt';
+        item.appendChild(img);
+        item.appendChild(meta);
+        item.addEventListener('click', () => { if (onItemClick) onItemClick(d); });
+        gridEl.appendChild(item);
+      });
+    }
+
+    searchEl.addEventListener('input', render);
+
+    async function refresh() {
+      if (!jsonbinReady) {
+        emptyEl.textContent = 'Galerie-System ist noch nicht eingerichtet (JSONBin-Zugangsdaten fehlen im Code).';
+        emptyEl.style.display = 'block';
+        return;
+      }
+      if (refreshBtn) { refreshBtn.disabled = true; refreshBtn.textContent = '⏳'; }
+      try {
+        const data = await fetchBinData();
+        allDocs = Array.isArray(data[type]) ? data[type] : [];
+        render();
+      } catch (err) {
+        console.error('Galerie laden fehlgeschlagen:', err);
+        emptyEl.textContent = 'Galerie konnte nicht geladen werden.';
+        emptyEl.style.display = 'block';
+      }
+      if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.textContent = '🔄'; }
+    }
+
+    if (refreshBtn) refreshBtn.addEventListener('click', refresh);
+    refresh();
+    return { refresh };
   }
 
   function setupDropArea(area, input, onFile) {
@@ -535,6 +950,11 @@
   const mapartStatus = document.getElementById('mapartStatus');
 
   async function handleMapartFile(file) {
+    const displayName = getDisplayName();
+    if (!displayName) {
+      openAuthOverlay();
+      return;
+    }
     if (!file.type.startsWith('image/')) {
       mapartStatus.textContent = 'Bitte eine Bilddatei auswählen.';
       mapartStatus.classList.add('error');
@@ -558,6 +978,12 @@
       mapartUrlOutput.value = publicUrl;
       mapartUrlRow.style.display = 'flex';
       mapartStatus.textContent = 'Fertig! Das ist dein öffentlicher Link – jeder kann ihn öffnen.';
+      await savePost('mapart', {
+        url: publicUrl,
+        filename: file.name,
+        uploader: displayName
+      });
+      if (mapartGalleryCtrl) mapartGalleryCtrl.refresh();
     } catch (err) {
       if (err.message === 'NO_API_KEY') {
         mapartStatus.textContent = 'Kein imgbb-API-Key hinterlegt. Öffentliche Uploads sind noch nicht eingerichtet (siehe Kommentar im Code).';
@@ -569,6 +995,8 @@
   }
 
   setupDropArea(mapartDropArea, mapartFile, handleMapartFile);
+  const mapartGalleryCtrl = setupGallery('mapart', document.getElementById('mapartGallery'), document.getElementById('mapartGalleryEmpty'), document.getElementById('mapartSearch'), document.getElementById('mapartRefreshBtn'),
+    (d) => window.open(d.url, '_blank'));
 
   mapartCopyBtn.addEventListener('click', async () => {
     try {
@@ -693,6 +1121,17 @@
   // ---- Skin-Datei hochladen und Kopf-Textur daraus bauen ----
   let currentFile = null;
 
+  function applyHeadTexture(sourceCanvas, texW, texH) {
+    const tex = new THREE.CanvasTexture(sourceCanvas);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    applyUV(geo, HEAD_UV, texW, texH);
+    material.map = tex;
+    material.needsUpdate = true;
+    if (currentTexture) currentTexture.dispose();
+    currentTexture = tex;
+  }
+
   function handleHeadsFile(file) {
     if (!file.type.includes('png') && !file.name.toLowerCase().endsWith('.png')) {
       headsStatus.textContent = 'Bitte eine PNG-Skin-Datei auswählen.';
@@ -710,21 +1149,10 @@
     img.onload = () => {
       const texW = img.naturalWidth;
       const texH = img.naturalHeight;
-
       const c = document.createElement('canvas');
       c.width = texW; c.height = texH;
-      const ctx = c.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-
-      const tex = new THREE.CanvasTexture(c);
-      tex.magFilter = THREE.NearestFilter;
-      tex.minFilter = THREE.NearestFilter;
-
-      applyUV(geo, HEAD_UV, texW, texH);
-      material.map = tex;
-      material.needsUpdate = true;
-      if (currentTexture) currentTexture.dispose();
-      currentTexture = tex;
+      c.getContext('2d').drawImage(img, 0, 0);
+      applyHeadTexture(c, texW, texH);
 
       currentFile = file;
       headsStatus.textContent = '"' + file.name + '" geladen – Kopf wird als 3D-Vorschau angezeigt.';
@@ -740,7 +1168,36 @@
     img.src = objectUrl;
   }
 
+  // Skin von einer öffentlichen URL laden (Klick in der Galerie)
+  function loadHeadFromUrl(url, label) {
+    headsStatus.classList.remove('error');
+    headsStatus.textContent = 'Lade "' + (label || url) + '" …';
+    headsDownloadBtn.style.display = 'none';
+    headsUploadBtn.style.display = 'none';
+    headsUrlRow.style.display = 'none';
+    currentFile = null;
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const texW = img.naturalWidth;
+      const texH = img.naturalHeight;
+      const c = document.createElement('canvas');
+      c.width = texW; c.height = texH;
+      c.getContext('2d').drawImage(img, 0, 0);
+      applyHeadTexture(c, texW, texH);
+      headsStatus.textContent = '"' + (label || 'Skin') + '" wird angezeigt.';
+    };
+    img.onerror = () => {
+      headsStatus.textContent = 'Skin konnte nicht geladen werden.';
+      headsStatus.classList.add('error');
+    };
+    img.src = url;
+  }
+
   setupDropArea(headsDropArea, headsFile, handleHeadsFile);
+  const headsGalleryCtrl = setupGallery('heads', document.getElementById('headsGallery'), document.getElementById('headsGalleryEmpty'), document.getElementById('headsSearch'), document.getElementById('headsRefreshBtn'),
+    (d) => loadHeadFromUrl(d.url, d.filename));
 
   headsDownloadBtn.addEventListener('click', () => {
     if (!currentFile) return;
@@ -756,6 +1213,11 @@
 
   headsUploadBtn.addEventListener('click', async () => {
     if (!currentFile) return;
+    const displayName = getDisplayName();
+    if (!displayName) {
+      openAuthOverlay();
+      return;
+    }
     headsUploadBtn.disabled = true;
     headsUploadBtn.textContent = 'Wird hochgeladen …';
     headsUrlRow.style.display = 'none';
@@ -764,6 +1226,12 @@
       headsUrlOutput.value = publicUrl;
       headsUrlRow.style.display = 'flex';
       headsUploadBtn.textContent = 'Für andere hochladen (öffentlicher Link)';
+      await savePost('heads', {
+        url: publicUrl,
+        filename: currentFile.name,
+        uploader: displayName
+      });
+      if (headsGalleryCtrl) headsGalleryCtrl.refresh();
     } catch (err) {
       if (err.message === 'NO_API_KEY') {
         headsStatus.textContent = 'Kein imgbb-API-Key hinterlegt. Öffentliche Uploads sind noch nicht eingerichtet.';
