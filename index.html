@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Countdown</title>
+<title>KIWI. Server</title>
 <link rel="icon" type="image/png" href="Kiwi_Logo.png">
 <style>
   :root {
@@ -472,6 +472,7 @@
     gap: 12px;
   }
   .gallery-item {
+    position: relative;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
@@ -490,13 +491,63 @@
     display: block;
     background: rgba(0,0,0,0.3);
   }
-  .gallery-item .gi-meta {
-    padding: 6px 8px;
-    font-size: 0.7rem;
-    opacity: 0.65;
+  .gi-meta-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 7px 8px 10px;
+    line-height: 1.35;
+  }
+  .gi-meta-line {
+    font-size: 0.68rem;
+    opacity: 0.7;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  .gi-meta-label {
+    opacity: 0.5;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .gallery-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .gallery-item:hover .gallery-actions,
+  .gallery-item:focus-within .gallery-actions {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .gallery-action-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(8, 18, 11, 0.8);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 0.78rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    text-decoration: none;
+  }
+  .gallery-action-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .gallery-action-btn.delete:hover {
+    border-color: #ff8a8a;
+    color: #ff8a8a;
   }
   .gallery-empty {
     opacity: 0.5;
@@ -672,10 +723,20 @@
     return json.record || { mapart: [], heads: [] };
   }
 
+  function makeEntryId() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+    return 'entry-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+  }
+
   async function addPost(type, entry) {
     const data = await fetchBinData();
     if (!Array.isArray(data[type])) data[type] = [];
-    data[type].unshift({ ...entry, createdAt: Date.now() });
+    const normalized = {
+      ...entry,
+      id: entry.id || makeEntryId(),
+      createdAt: entry.createdAt || Date.now()
+    };
+    data[type].unshift(normalized);
     const res = await fetch('https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
@@ -683,6 +744,37 @@
     });
     if (!res.ok) throw new Error('JSONBIN_WRITE_FAILED');
     return data[type];
+  }
+
+  async function updatePost(type, itemId, changes) {
+    if (!jsonbinReady) return false;
+    const data = await fetchBinData();
+    const list = Array.isArray(data[type]) ? data[type] : [];
+    const index = list.findIndex(d => String(d.id || d.createdAt) === String(itemId));
+    if (index === -1) return false;
+
+    list[index] = { ...list[index], ...changes };
+    const res = await fetch('https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('JSONBIN_WRITE_FAILED');
+    return true;
+  }
+
+  async function deletePost(type, itemId) {
+    if (!jsonbinReady) return false;
+    const data = await fetchBinData();
+    const list = Array.isArray(data[type]) ? data[type] : [];
+    data[type] = list.filter(d => String(d.id || d.createdAt) !== String(itemId));
+    const res = await fetch('https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('JSONBIN_WRITE_FAILED');
+    return true;
   }
 </script>
 
@@ -885,15 +977,98 @@
       filtered.forEach((d) => {
         const item = document.createElement('div');
         item.className = 'gallery-item';
+        item.tabIndex = 0;
+
+        const actions = document.createElement('div');
+        actions.className = 'gallery-actions';
+
+        const downloadLink = document.createElement('a');
+        downloadLink.href = d.url;
+        downloadLink.download = d.filename || 'download';
+        downloadLink.className = 'gallery-action-btn';
+        downloadLink.title = 'Datei herunterladen';
+        downloadLink.textContent = '↓';
+        downloadLink.setAttribute('aria-label', 'Datei herunterladen');
+        downloadLink.addEventListener('click', (event) => {
+          event.stopPropagation();
+        });
+
+        const renameBtn = document.createElement('button');
+        renameBtn.type = 'button';
+        renameBtn.className = 'gallery-action-btn';
+        renameBtn.title = 'Ersteller-Namen ändern';
+        renameBtn.textContent = '✎';
+        renameBtn.addEventListener('click', async (event) => {
+          event.stopPropagation();
+          const currentName = d.uploader || 'Unbekannt';
+          const nextName = window.prompt('Neuen Ersteller-Namen eingeben:', currentName);
+          if (nextName === null) return;
+          const cleanName = nextName.trim();
+          if (!cleanName) {
+            window.alert('Bitte einen Namen eingeben.');
+            return;
+          }
+          try {
+            const ok = await updatePost(type, d.id || d.createdAt, { uploader: cleanName });
+            if (!ok) {
+              window.alert('Eintrag konnte nicht aktualisiert werden.');
+              return;
+            }
+            if (refreshBtn) refreshBtn.click();
+          } catch (err) {
+            console.error('Namen ändern fehlgeschlagen:', err);
+            window.alert('Namen konnte nicht geändert werden.');
+          }
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'gallery-action-btn delete';
+        deleteBtn.title = 'Eintrag löschen';
+        deleteBtn.textContent = '🗑';
+        deleteBtn.addEventListener('click', async (event) => {
+          event.stopPropagation();
+          const shouldDelete = window.confirm('Diesen Eintrag wirklich löschen?');
+          if (!shouldDelete) return;
+          try {
+            const ok = await deletePost(type, d.id || d.createdAt);
+            if (!ok) {
+              window.alert('Eintrag konnte nicht gelöscht werden.');
+              return;
+            }
+            if (refreshBtn) refreshBtn.click();
+          } catch (err) {
+            console.error('Eintrag löschen fehlgeschlagen:', err);
+            window.alert('Eintrag konnte nicht gelöscht werden.');
+          }
+        });
+
+        actions.appendChild(downloadLink);
+        actions.appendChild(renameBtn);
+        actions.appendChild(deleteBtn);
+
         const img = document.createElement('img');
         img.src = d.url;
         img.loading = 'lazy';
         img.alt = d.filename || '';
-        const meta = document.createElement('div');
-        meta.className = 'gi-meta';
-        meta.textContent = d.uploader || 'Unbekannt';
+
+        const metaStack = document.createElement('div');
+        metaStack.className = 'gi-meta-stack';
+
+        const uploaderLine = document.createElement('div');
+        uploaderLine.className = 'gi-meta-line';
+        uploaderLine.innerHTML = '<span class="gi-meta-label">Ersteller:</span> ' + (d.uploader || 'Unbekannt');
+
+        const filenameLine = document.createElement('div');
+        filenameLine.className = 'gi-meta-line';
+        filenameLine.innerHTML = '<span class="gi-meta-label">Bild:</span> ' + (d.filename || 'Unbenannt');
+
+        metaStack.appendChild(uploaderLine);
+        metaStack.appendChild(filenameLine);
+
+        item.appendChild(actions);
         item.appendChild(img);
-        item.appendChild(meta);
+        item.appendChild(metaStack);
         item.addEventListener('click', () => { if (onItemClick) onItemClick(d); });
         gridEl.appendChild(item);
       });
@@ -910,7 +1085,12 @@
       if (refreshBtn) { refreshBtn.disabled = true; refreshBtn.textContent = '⏳'; }
       try {
         const data = await fetchBinData();
-        allDocs = Array.isArray(data[type]) ? data[type] : [];
+        allDocs = Array.isArray(data[type]) ? data[type].map((d) => ({
+          ...d,
+          id: d.id || String(d.createdAt || Date.now()),
+          uploader: d.uploader || 'Unbekannt',
+          filename: d.filename || 'Unbenannt'
+        })) : [];
         render();
       } catch (err) {
         console.error('Galerie laden fehlgeschlagen:', err);
