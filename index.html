@@ -993,59 +993,65 @@
           event.stopPropagation();
         });
 
-        const renameBtn = document.createElement('button');
-        renameBtn.type = 'button';
-        renameBtn.className = 'gallery-action-btn';
-        renameBtn.title = 'Ersteller-Namen ändern';
-        renameBtn.textContent = '✎';
-        renameBtn.addEventListener('click', async (event) => {
-          event.stopPropagation();
-          const currentName = d.uploader || 'Unbekannt';
-          const nextName = window.prompt('Neuen Ersteller-Namen eingeben:', currentName);
-          if (nextName === null) return;
-          const cleanName = nextName.trim();
-          if (!cleanName) {
-            window.alert('Bitte einen Namen eingeben.');
-            return;
-          }
-          try {
-            const ok = await updatePost(type, d.id || d.createdAt, { uploader: cleanName });
-            if (!ok) {
-              window.alert('Eintrag konnte nicht aktualisiert werden.');
-              return;
-            }
-            if (refreshBtn) refreshBtn.click();
-          } catch (err) {
-            console.error('Namen ändern fehlgeschlagen:', err);
-            window.alert('Namen konnte nicht geändert werden.');
-          }
-        });
+        const currentUser = getDisplayName();
+        const isOwner = currentUser && currentUser === (d.uploader || '').trim();
 
-        const deleteBtn = document.createElement('button');
-        deleteBtn.type = 'button';
-        deleteBtn.className = 'gallery-action-btn delete';
-        deleteBtn.title = 'Eintrag löschen';
-        deleteBtn.textContent = '🗑';
-        deleteBtn.addEventListener('click', async (event) => {
-          event.stopPropagation();
-          const shouldDelete = window.confirm('Diesen Eintrag wirklich löschen?');
-          if (!shouldDelete) return;
-          try {
-            const ok = await deletePost(type, d.id || d.createdAt);
-            if (!ok) {
-              window.alert('Eintrag konnte nicht gelöscht werden.');
+        if (isOwner) {
+          const renameBtn = document.createElement('button');
+          renameBtn.type = 'button';
+          renameBtn.className = 'gallery-action-btn';
+          renameBtn.title = 'Bildnamen ändern';
+          renameBtn.textContent = '✎';
+          renameBtn.addEventListener('click', async (event) => {
+            event.stopPropagation();
+            const currentName = d.filename || 'Unbenannt';
+            const nextName = window.prompt('Neuen Bildnamen eingeben:', currentName);
+            if (nextName === null) return;
+            const cleanName = nextName.trim();
+            if (!cleanName) {
+              window.alert('Bitte einen Bildnamen eingeben.');
               return;
             }
-            if (refreshBtn) refreshBtn.click();
-          } catch (err) {
-            console.error('Eintrag löschen fehlgeschlagen:', err);
-            window.alert('Eintrag konnte nicht gelöscht werden.');
-          }
-        });
+            try {
+              const ok = await updatePost(type, d.id || d.createdAt, { filename: cleanName });
+              if (!ok) {
+                window.alert('Bild konnte nicht aktualisiert werden.');
+                return;
+              }
+              if (refreshBtn) refreshBtn.click();
+            } catch (err) {
+              console.error('Bildname ändern fehlgeschlagen:', err);
+              window.alert('Bildname konnte nicht geändert werden.');
+            }
+          });
+
+          const deleteBtn = document.createElement('button');
+          deleteBtn.type = 'button';
+          deleteBtn.className = 'gallery-action-btn delete';
+          deleteBtn.title = 'Eintrag löschen';
+          deleteBtn.textContent = '🗑';
+          deleteBtn.addEventListener('click', async (event) => {
+            event.stopPropagation();
+            const shouldDelete = window.confirm('Diesen Eintrag wirklich löschen?');
+            if (!shouldDelete) return;
+            try {
+              const ok = await deletePost(type, d.id || d.createdAt);
+              if (!ok) {
+                window.alert('Eintrag konnte nicht gelöscht werden.');
+                return;
+              }
+              if (refreshBtn) refreshBtn.click();
+            } catch (err) {
+              console.error('Eintrag löschen fehlgeschlagen:', err);
+              window.alert('Eintrag konnte nicht gelöscht werden.');
+            }
+          });
+
+          actions.appendChild(renameBtn);
+          actions.appendChild(deleteBtn);
+        }
 
         actions.appendChild(downloadLink);
-        actions.appendChild(renameBtn);
-        actions.appendChild(deleteBtn);
 
         const img = document.createElement('img');
         img.src = d.url;
